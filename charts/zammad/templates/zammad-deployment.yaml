@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zammad
+  namespace: {{ .Release.Namespace }}
+spec:
+  replicas: {{ .Values.replicaCount.zammad }}
+  selector:
+    matchLabels:
+      app: zammad
+  template:
+    metadata:
+      labels:
+        app: zammad
+    spec:
+      containers:
+        # Zammad Rails App Server
+        - name: zammad-railsserver
+          image: "{{ .Values.image.zammad.repository }}:{{ .Values.image.zammad.tag }}"
+          command: ["/docker-entrypoint.sh", "zammad-railsserver"]
+          ports:
+            - containerPort: 3000
+          env:
+            - name: REDIS_URL
+              value: "redis://zammad-redis:6379"
+            - name: POSTGRESQL_HOST
+              value: "zammad-postgresql"
+            - name: POSTGRESQL_PORT
+              value: "5432"
+            - name: POSTGRESQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: zammad-db-secret
+                  key: POSTGRES_USER
+            - name: POSTGRESQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: zammad-db-secret
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRESQL_DB
+              valueFrom:
+                secretKeyRef:
+                  name: zammad-db-secret
+                  key: POSTGRES_DB
+          volumeMounts:
+            - name: zammad-storage
+              mountPath: /opt/zammad/storage
+
+        # Nginx Reverse Proxy Sidecar
+        - name: zammad-nginx
+          image: "{{ .Values.image.zammad.repository }}:{{ .Values.image.zammad.tag }}"
+          command: ["/docker-entrypoint.sh", "zammad-nginx"]
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: zammad-storage
+              mountPath: /opt/zammad/storage
+      volumes:
+        - name: zammad-storage
+          persistentVolumeClaim:
+            claimName: zammad-data-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: zammad-service
+  namespace: {{ .Release.Namespace }}
+spec:
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  selector:
+    app: zammad

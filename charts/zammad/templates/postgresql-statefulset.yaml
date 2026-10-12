@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: zammad-postgresql
+  namespace: {{ .Release.Namespace }}
+spec:
+  serviceName: "zammad-postgresql"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: zammad-postgresql
+  template:
+    metadata:
+      labels:
+        app: zammad-postgresql
+    spec:
+      containers:
+        - name: postgresql
+          image: "{{ .Values.image.postgres.repository }}:{{ .Values.image.postgres.tag }}"
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - secretRef:
+                name: zammad-db-secret
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+    - metadata:
+        name: postgres-data
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        storageClassName: "{{ .Values.storage.className }}"
+        resources:
+          requests:
+            storage: "{{ .Values.storage.postgresSize }}"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: zammad-postgresql
+  namespace: {{ .Release.Namespace }}
+spec:
+  ports:
+    - port: 5432
+      targetPort: 5432
+  selector:
+    app: zammad-postgresql

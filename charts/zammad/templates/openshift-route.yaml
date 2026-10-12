@@ -1,0 +1,15 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: zammad-route
+  namespace: {{ .Release.Namespace }}
+spec:
+  host: "{{ .Values.domain }}"
+  to:
+    kind: Service
+    name: zammad-service
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect

@@ -1,0 +1,8 @@
+# Production overrides
+replicaCount:
+  zammad: 2 # Scale up web app for high availability
+
+domain: "zammad.yourcompany.com"
+
+storage:
+  className: "ocs-storagecluster-cephfs" # Example OpenShift Data Foundation storage class

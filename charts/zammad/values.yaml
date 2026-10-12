@@ -1,0 +1,24 @@
+global:
+  environment: production
+
+replicaCount:
+  zammad: 1
+
+image:
+  zammad:
+    repository: zammad/zammad
+    tag: "6.2.0"
+    pullPolicy: IfNotPresent
+  postgres:
+    repository: postgres
+    tag: "15-alpine"
+  redis:
+    repository: redis
+    tag: "7-alpine"
+
+storage:
+  className: "gp2" # Or your OpenShift cluster's enterprise storage class
+  postgresSize: 20Gi
+  zammadDataSize: 30Gi
+
+domain: "zammad.yourcompany.com"
